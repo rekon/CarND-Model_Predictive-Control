@@ -3,6 +3,8 @@
 #include <cppad/ipopt/solve.hpp>
 #include "Eigen-3.3/Eigen/Core"
 
+#define MPH2MPS 0.44704
+
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
@@ -22,7 +24,7 @@ double dt = 0.05;
 const double Lf = 2.67;
 
 // The reference velocity is set to 40 mph.
-double ref_v = 40;
+double ref_v = 40 * MPH2MPS;
 
 size_t x_start = 0;
 size_t y_start = x_start + N;
@@ -50,23 +52,23 @@ class FG_eval {
 
     // The part of the cost based on the reference state.
     for (unsigned int t = 0; t < N; t++) {
-      fg[0] += 2000 * CppAD::pow(vars[cte_start + t], 2);
-      fg[0] += 2000 * CppAD::pow(vars[epsi_start + t], 2);
+      fg[0] += 2200 * CppAD::pow(vars[cte_start + t], 2);
+      fg[0] += 2200 * CppAD::pow(vars[epsi_start + t], 2);
       fg[0] += 100 * CppAD::pow(vars[v_start + t] - ref_v, 2);
     }
 
     // Minimize the use of actuators.
     for (unsigned int t = 0; t < N - 1; t++) {
-      fg[0] += 200 * CppAD::pow(vars[delta_start + t], 2);
-      fg[0] += 100 * CppAD::pow(vars[a_start + t], 2);
+      fg[0] += 800 * CppAD::pow(vars[delta_start + t], 2);
+      fg[0] += 500 * CppAD::pow(vars[a_start + t], 2);
       //penalty for speed and steer
-      fg[0] += 400 * CppAD::pow(vars[v_start + t] * vars[delta_start + t], 2);
+      fg[0] += 1000 * CppAD::pow(vars[v_start + t] * vars[delta_start + t], 2);
     }
 
     // Minimize the value gap between sequential actuations.
     for (unsigned int t = 0; t < N - 2; t++) {
-      fg[0] += 100 * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
-      fg[0] += 50 * CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
+      fg[0] += 200 * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
+      fg[0] += 500 * CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
     }
 
     // We add 1 to each of the starting indices due to cost being located at

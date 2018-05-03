@@ -9,6 +9,8 @@
 #include "MPC.h"
 #include "json.hpp"
 
+#define MPH2MPS 0.44704
+
 // for convenience
 using json = nlohmann::json;
 
@@ -93,7 +95,9 @@ int main() {
           double v = j[1]["speed"];
           double a = j[1]["throttle"];
           double delta = j[1]["steering_angle"];
-          double latency = 0.1;
+
+          //change unit of velocity
+          v *= MPH2MPS;
 
           vector<double> car_ptsx;
           vector<double> car_ptsy;
@@ -111,16 +115,18 @@ int main() {
           Eigen::Map<Eigen::VectorXd> car_y_eigen(ptry, 6);
 
           auto coeffs = polyfit( car_x_eigen, car_y_eigen, 3 );
+          double cte = polyeval(coeffs, 0);
+          double epsi = atan( coeffs[1] );
 
-          // The cross track error is calculated by evaluating at polynomial at x, f(x)
-          // and subtracting y.
-          //including latency    
+          // The cross track error is calculated by evaluating at polynomial at x, f(x) and subtracting y.
+          //including latency  
+          double latency = 0.1;  
           double car_x = v * cos(0) * latency;
           double car_y = v * sin(0) * latency;
-          psi = -(v * delta / 2.67 * latency);
+          double car_psi = 0 - (v * delta / 2.67 * latency);
           v += a * latency;
-          double cte = polyeval(coeffs, car_x) - car_y;
-          double epsi = atan( coeffs[1] + 2 * coeffs[2] * car_x + 3 * coeffs[3] * (car_x * car_x) ) - psi;
+          double new_cte = cte - v * sin(epsi) * latency;
+          double new_epsi = epsi + car_psi;
 
           // std::cout<<"psi: "<<psi<<" px: "<<car_x<<" py: "<<car_y<<" v: "<<v<<" cte: "<<cte<<" epsi: "<<epsi<<"\n";
           /*
@@ -130,7 +136,7 @@ int main() {
           *
           */
           Eigen::VectorXd state(6);
-          state << car_x, car_y, psi, v, cte, epsi;
+          state << car_x, car_y, car_psi, v, new_cte, new_epsi;
           auto solution = mpc.Solve( state, coeffs );
 
           double steer_value = solution[0];
