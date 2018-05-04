@@ -109,10 +109,10 @@ int main() {
             car_ptsy.push_back( y*cos(-psi) + x*sin(-psi));
           }
 
-          double* ptrx = &car_ptsx[0];
-          double* ptry = &car_ptsy[0];
-          Eigen::Map<Eigen::VectorXd> car_x_eigen(ptrx, 6);
-          Eigen::Map<Eigen::VectorXd> car_y_eigen(ptry, 6);
+          double* x_ptr = &car_ptsx[0];
+          double* y_ptr = &car_ptsy[0];
+          Eigen::Map<Eigen::VectorXd> car_x_eigen(x_ptr, 6);
+          Eigen::Map<Eigen::VectorXd> car_y_eigen(y_ptr, 6);
 
           auto coeffs = polyfit( car_x_eigen, car_y_eigen, 3 );
           double cte = polyeval(coeffs, 0);
